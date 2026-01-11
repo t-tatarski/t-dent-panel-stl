@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name: T-Dent – Panel STL (FINALNY)
+ * Plugin Name: T-Dent – Panel STL
  * Description: Panel do pobierania STL z Forminatora WEBD
- * Version: 1.6.0
+ * Version: 1.7.0
  * Author: Tatarski
  * Licence: MIT
  * Plugin URI: https://github.com/t-tatarski/t-dent-panel-stl/blob/main/t-dent-panel-stl.php
