@@ -2,16 +2,15 @@
 /**
  * Plugin Name: T-Dent – Panel STL
  * Description: Prosty panel do przeglądania zleceń STL z Forminatora
- * Version: 1.0.0
+ * Version: 1.1.0
  * Author: Tatarski
  * Plugin URI: https://github.com/t-tatarski/t-dent-panel-stl.git
  * Licence: MIT
  */
 
-
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-// Dodanie pozycji w menu admina
+// admin menu
 add_action( 'admin_menu', function () {
     add_menu_page(
         'Zlecenia STL',
@@ -24,16 +23,16 @@ add_action( 'admin_menu', function () {
     );
 });
 
-// Render panelu
+// Funkcja renderująca panel
 function t_dent_render_panel() {
 
- echo '<div class="notice notice-error"><p>Ustaw w kodzie numeryczne ID formularza z Forminatora (linijka 37)</p></div>';
+    echo '<div class="notice notice-error"><p>Ustaw w kodzie numeryczne ID formularza z Forminatora (linijka 36)</p></div>';
 
     if ( ! class_exists( 'Forminator_API' ) ) {
         echo '<div class="notice notice-error"><p>Forminator nie jest aktywny.</p></div>';
         return;
     }
-//  WAZNE! 
+
     $form_id = 61; // <- ustaw dokładne ID formularza
 
     $entries = Forminator_API::get_entries( $form_id );
@@ -71,9 +70,9 @@ function t_dent_render_panel() {
         $date        = $meta['date-1']['value'] ?? '-';
 
         // Upload STL
-        $file = '';
-        if ( isset( $meta['upload-1']['value']['file_url'][0] ) ) {
-            $file = $meta['upload-1']['value']['file_url'][0];
+        $file_path = '';
+        if ( isset( $meta['upload-1']['value']['file_path'][0] ) ) {
+            $file_path = $meta['upload-1']['value']['file_path'][0];
         }
 
         echo '<tr>';
@@ -85,8 +84,10 @@ function t_dent_render_panel() {
         echo '<td>' . esc_html( $date ) . '</td>';
         echo '<td>';
 
-        if ( $file ) {
-            echo '<a href="' . esc_url( $file ) . '" target="_blank">Pobierz STL</a>';
+        if ( $file_path && file_exists($file_path) ) {
+            // Tworzymy bezpieczny link do pobrania przez admin_post
+            $download_url = admin_url( 'admin-post.php?action=download_stl&file=' . urlencode($file_path) );
+            echo '<a href="' . esc_url($download_url) . '" target="_blank">Pobierz STL</a>';
         } else {
             echo '-';
         }
@@ -97,3 +98,30 @@ function t_dent_render_panel() {
     echo '</tbody></table>';
     echo '</div>';
 }
+
+// Obsługa pobierania plików STL
+add_action('admin_post_download_stl', function() {
+    if ( !current_user_can('manage_options') || !isset($_GET['file']) ) {
+        wp_die('Brak dostępu');
+    }
+
+    $file = $_GET['file'];
+
+    // Bezpieczna walidacja pliku
+    $allowed_dir = wp_upload_dir()['basedir']; // katalog uploads WordPress
+    $realpath = realpath($file);
+    if ( !$realpath || strpos($realpath, $allowed_dir) !== 0 || !file_exists($realpath) ) {
+        wp_die('Plik nie istnieje lub brak dostępu');
+    }
+
+    // Wysyłamy plik do przeglądarki
+    header('Content-Description: File Transfer');
+    header('Content-Type: application/octet-stream');
+    header('Content-Disposition: attachment; filename="' . basename($realpath) . '"');
+    header('Expires: 0');
+    header('Cache-Control: must-revalidate');
+    header('Pragma: public');
+    header('Content-Length: ' . filesize($realpath));
+    readfile($realpath);
+    exit;
+});
