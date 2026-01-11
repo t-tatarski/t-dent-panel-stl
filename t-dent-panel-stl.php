@@ -4,11 +4,14 @@
  * Description: Prosty panel do przeglądania zleceń STL z Forminatora
  * Version: 1.0.0
  * Author: Tatarski
+ * Plugin URI: https://github.com/t-tatarski/t-dent-panel-stl.git
+ * Licence: MIT
  */
+
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-// menu admin
+// Dodanie pozycji w menu admina
 add_action( 'admin_menu', function () {
     add_menu_page(
         'Zlecenia STL',
@@ -21,15 +24,17 @@ add_action( 'admin_menu', function () {
     );
 });
 
-//  panel
+// Render panelu
 function t_dent_render_panel() {
 
+ echo '<div class="notice notice-error"><p>Ustaw w kodzie numeryczne ID formularza z Forminatora (linijka 37)</p></div>';
+
     if ( ! class_exists( 'Forminator_API' ) ) {
-        echo '<div class="notice notice-error"><p>Forminator musi być aktywny.</p></div>';
+        echo '<div class="notice notice-error"><p>Forminator nie jest aktywny.</p></div>';
         return;
     }
-    // 
-    $form_id = 1; // Forminator form id 
+//  WAZNE! 
+    $form_id = 61; // <- ustaw dokładne ID formularza
 
     $entries = Forminator_API::get_entries( $form_id );
 
@@ -44,12 +49,13 @@ function t_dent_render_panel() {
     echo '<table class="widefat fixed striped">';
     echo '<thead>
             <tr>
-                <th>Data przyjęcia</th>
+                <th>Data systemowa</th>
+                <th>IP zgłaszającego</th>
                 <th>Dane pacjenta</th>
                 <th>Typ pracy</th>
                 <th>Materiał</th>
-                <th>Termin sugerowany</th>
-                <th>Plik ( STL )</th>
+                <th>Termin</th>
+                <th>Plik STL</th>
             </tr>
           </thead><tbody>';
 
@@ -57,23 +63,22 @@ function t_dent_render_panel() {
 
         $meta = $entry->meta_data;
 
-        $patient  = $meta['textarea-1']['value'] ?? '-';
-        $work     = $meta['radio-1']['value'] ?? '-';
-        $date     = $meta['date-1']['value'] ?? '-';
+        $system_date = $meta['hidden-1']['value'] ?? '-';
+        $ip          = $meta['_forminator_user_ip']['value'] ?? '-';
+        $patient     = $meta['textarea-1']['value'] ?? '-';
+        $work        = $meta['radio-1']['value'] ?? '-';
+        $material    = $meta['checkbox-1']['value'] ?? '-';
+        $date        = $meta['date-1']['value'] ?? '-';
 
-        // checkbox → może być tablicą
-        $material = '-';
-        if ( isset( $meta['checkbox-1']['value'] ) ) {
-            $material = is_array( $meta['checkbox-1']['value'] )
-                ? implode( ', ', $meta['checkbox-1']['value'] )
-                : $meta['checkbox-1']['value'];
+        // Upload STL
+        $file = '';
+        if ( isset( $meta['upload-1']['value']['file_url'][0] ) ) {
+            $file = $meta['upload-1']['value']['file_url'][0];
         }
 
-        // upload STL
-        $file = $meta['upload-1']['value'][0]['file_url'] ?? '';
-
         echo '<tr>';
-        echo '<td>' . esc_html( $entry->date_created ) . '</td>';
+        echo '<td>' . esc_html( $system_date ) . '</td>';
+        echo '<td>' . esc_html( $ip ) . '</td>';
         echo '<td>' . esc_html( $patient ) . '</td>';
         echo '<td>' . esc_html( $work ) . '</td>';
         echo '<td>' . esc_html( $material ) . '</td>';
